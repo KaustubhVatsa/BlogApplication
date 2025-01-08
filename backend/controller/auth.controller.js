@@ -3,17 +3,8 @@ import bcrypt from "bcryptjs"
 import nodemailer from "nodemailer"; //for mail verification
 import crypto from "crypto";
 import { tokenGenandCookieSend } from "../Utils/tokenGenandCookieHandler.js";
-import dotenv from 'dotenv';
-dotenv.config();
-console.log(process.env.EMAIL)
+import { transporter } from "./emailVerification.controller.js";
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASSWORD
-      }
-});
 export const signup = async (req , res )=>{
     try {
         const {username , email , password} = req.body;
@@ -47,6 +38,7 @@ export const signup = async (req , res )=>{
         };
         await transporter.sendMail(mailConfig);
 
+        verifyEmail();
 
         if(newUser){
             tokenGenandCookieSend(newUser._id,res);
@@ -99,7 +91,6 @@ export const login = async (req ,res)=>{
     if(!email||!password){
         return res.status(400).json({message:"Email or password missing"});
     }
-    //check if the email exists...
     const user = await User.findOne({email});
     if(!user){
         return res.status(400).json({message:"Invalid Credentials"});

@@ -46,7 +46,7 @@ export const login = async (req ,res)=>{
         return res.status(400).json({message:"Email or password missing"});
     }
     //check if the email exists...
-    const user = User.findOne({email});
+    const user = await User.findOne({email});
     if(!user){
         return res.status(400).json({message:"Invalid Credentials"});
     }
@@ -57,9 +57,9 @@ export const login = async (req ,res)=>{
     }
     tokenGenandCookieSend(user._id,res);
     res.status(200).json({
-        _id:newUser._id,
-        name:newUser.username,
-        email:newUser.email
+        _id:user._id,
+        name:user.username,
+        email:user.email
     })
     } catch (error) {
         console.log("Error in login Controller ",error.message)
@@ -83,3 +83,12 @@ export const logout = async (req , res)=>{
         res.status(500).json({message:"Internal Server Error"});
     }
 }
+
+export const checkAuth = (req, res) => {
+    try {
+      res.status(200).json(req.user);
+    } catch (error) {
+      console.log("Error in checkAuth controller", error.message);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  };

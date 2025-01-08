@@ -1,6 +1,19 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs"
+import nodemailer from "nodemailer"; //for mail verification
+import crypto from "crypto";
 import { tokenGenandCookieSend } from "../Utils/tokenGenandCookieHandler.js";
+import dotenv from 'dotenv';
+dotenv.config();
+console.log(process.env.EMAIL)
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD
+      }
+});
 export const signup = async (req , res )=>{
     try {
         const {username , email , password} = req.body;
@@ -15,12 +28,26 @@ export const signup = async (req , res )=>{
         }
         const salt= await bcrypt.genSalt(10);
         const hashedPassword =await bcrypt.hash(password,salt);
+        const verificationCode = crypto.randomInt(100000, 999999).toString();
+
         
         const newUser = new User({
             username,
             email,
-            password:hashedPassword
-            })
+            password:hashedPassword,
+            verificationCode,
+            verificationExpires: Date.now() + 7200000
+        })
+
+        const mailConfig = {
+            from: process.env.EMAIL,
+            to: email,
+            subject: 'Email Verification',
+            text: `Your verification code is: ${verificationCode}`,
+        };
+        await transporter.sendMail(mailConfig);
+
+
         if(newUser){
             tokenGenandCookieSend(newUser._id,res);
             await newUser.save();
@@ -37,6 +64,33 @@ export const signup = async (req , res )=>{
         res.status(500).json({message:"Internal server error"})
     }
 }
+
+export const verifyEmail = async (req, res) => {
+    try {
+        const {email, verificationCode} = req.body;
+        const user = await User.findOne({email});
+
+        if (!user) {
+            return res.status(400).json({message: "User not found"});
+        }
+        if (user.verificationCode !== verificationCode) {
+            return res.status(400).json({message: "Invalid verification code"});
+        }
+
+        if (user.verificationExpires < Date.now()) {
+            return res.status(400).json({message: "Verification code has expired"});
+        }
+        user.isVerified = true;
+        user.verificationCode = undefined; 
+        user.verificationExpires = undefined; 
+        await user.save();
+
+        res.status(200).json({message: "Email verified successfully"});
+    } catch (error) {
+        console.log("Error in email verification:", error.message);
+        res.status(500).json({message: "Internal server error"});
+    }
+};
 
 
 export const login = async (req ,res)=>{

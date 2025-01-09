@@ -1,9 +1,12 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs"
-import nodemailer from "nodemailer"; //for mail verification
+import nodemailer from "nodemailer"; 
 import crypto from "crypto";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { tokenGenandCookieSend } from "../Utils/tokenGenandCookieHandler.js";
-import { transporter } from "./emailVerification.controller.js";
+import { transporter } from "../Utils/emailVerification.js";
 
 export const signup = async (req , res )=>{
     try {
@@ -19,8 +22,8 @@ export const signup = async (req , res )=>{
         }
         const salt= await bcrypt.genSalt(10);
         const hashedPassword =await bcrypt.hash(password,salt);
-        const verificationCode = crypto.randomInt(100000, 999999).toString();
-
+        
+        const verificationCode = await sendVerificationEmail(username, email);
         
         const newUser = new User({
             username,
@@ -30,16 +33,6 @@ export const signup = async (req , res )=>{
             verificationExpires: Date.now() + 7200000
         })
 
-        const mailConfig = {
-            from: process.env.EMAIL,
-            to: email,
-            subject: 'Email Verification',
-            text: `Your verification code is: ${verificationCode}`,
-        };
-        await transporter.sendMail(mailConfig);
-
-        verifyEmail();
-
         if(newUser){
             tokenGenandCookieSend(newUser._id,res);
             await newUser.save();
@@ -48,12 +41,40 @@ export const signup = async (req , res )=>{
                 name:newUser.username,
                 email:newUser.email
             })
-        }else{
+        }
+        else{
             return res.status(400).json({message:"Invalid Traveller Details"})
         }  
     } catch (error) {
         console.log("error in signup controller ", error.message);
         res.status(500).json({message:"Internal server error"})
+    }
+}
+
+const sendVerificationEmail = async (username, email) => {
+    try {
+        const verificationCode = crypto.randomInt(100000, 999999).toString();
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        const emailBody = fs.readFileSync(path.join(__dirname, '..', 'Utils', 'emailBody.html'), 'utf-8');
+        
+        const emailContent = emailBody
+            .replace('[username]', username)
+            .replace('[verificationCode]', verificationCode);
+
+
+        const mailConfig = {
+            from: process.env.EMAIL,
+            to: email,
+            subject: 'Email Verification',
+            html: emailContent,
+        };
+        await transporter.sendMail(mailConfig);
+        return verificationCode;
+    }
+    catch{
+        console.error("Error in sending verification email:", error.message);
+        throw new Error("Unable to send verification email.");
     }
 }
 
@@ -78,9 +99,10 @@ export const verifyEmail = async (req, res) => {
         await user.save();
 
         res.status(200).json({message: "Email verified successfully"});
-    } catch (error) {
+    } 
+    catch (error) {
         console.log("Error in email verification:", error.message);
-        res.status(500).json({message: "Internal server error"});
+        return res.status(500).json({message: "Internal server error"});
     }
 };
 
@@ -95,10 +117,13 @@ export const login = async (req ,res)=>{
     if(!user){
         return res.status(400).json({message:"Invalid Credentials"});
     }
-    //check password 
     const passwordValid = await bcrypt.compare(password,user.password);
     if(!passwordValid){
         return res.status(400).json({message:"Invalid Credentials"})
+    }
+    const isUserVerified = user.isVerified;
+    if(!isUserVerified){
+        return res.status(400).json({message : `User is not verified. Kindly verify your email '${user.email}'`})
     }
     tokenGenandCookieSend(user._id,res);
     res.status(200).json({

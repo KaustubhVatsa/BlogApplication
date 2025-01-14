@@ -1,0 +1,77 @@
+/* Overall page styling */
+.form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f4f4f9;
+    margin: 0;
+  }
+  
+  .form-container {
+    /* width: 60%; */
+    max-width: 400px; 
+    min-height: 400px; 
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    text-align: center;
+  }
+  
+  .form-header h4 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .form-header p {
+    margin: 5px 0 20px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .form-form {
+    margin-bottom: 20px;
+  }
+  .placeholder-field {
+    /* height: 48px; */
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 30px;
+    color: blue;
+}
+.placeholder-field:hover{
+  text-decoration: underline;
+  cursor: pointer;
+}
+  .form-submit button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .form-submit button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Signup section styling */
+  .next-link {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .next-link span Link {
+    color: #007bff;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  

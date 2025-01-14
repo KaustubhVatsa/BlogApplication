@@ -104,7 +104,8 @@ export const login = async (req ,res)=>{
     res.status(200).json({
         _id:user._id,
         name:user.username,
-        email:user.email
+        email:user.email, 
+        isVerified:false
     })
     } catch (error) {
         console.log("Error in login Controller ",error.message)
@@ -119,7 +120,7 @@ export const logout = async (req , res)=>{
             httpOnly:true,
             samesite:"strict",
             secure:process.env.NODE_ENV=="production",
-            expires:new Date(0)
+            expires:new Date(0),
         })
     
         res.status(200).json({message:"Logged Out successfully"})
